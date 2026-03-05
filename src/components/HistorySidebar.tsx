@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BookOpen, Trash2, Plus } from 'lucide-react';
-import { Activity } from '@/types/activity';
+import { Activity } from '@/hooks/useActivities';
 import {
   Sidebar,
   SidebarContent,

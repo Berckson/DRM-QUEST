@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Question, LEVEL_LABELS, LEVEL_COLORS } from '@/types/activity';
+import { Question } from '@/hooks/useActivities';
+import { LEVEL_LABELS, LEVEL_COLORS } from '@/types/activity';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
