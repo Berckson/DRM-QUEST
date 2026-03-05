@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Copy, FileDown, ArrowLeft, Check, Printer } from 'lucide-react';
-import { Activity, Question } from '@/types/activity';
+import { Activity, Question } from '@/hooks/useActivities';
 import { QuestionCard } from './QuestionCard';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

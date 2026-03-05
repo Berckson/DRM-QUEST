@@ -3,14 +3,30 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { HistorySidebar } from '@/components/HistorySidebar';
 import { GeneratorForm } from '@/components/GeneratorForm';
 import { ActivityPreview } from '@/components/ActivityPreview';
+import { AuthPage } from '@/components/AuthPage';
 import { useActivities } from '@/hooks/useActivities';
-import { generateActivity } from '@/lib/mockGenerator';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
 
 const Index = () => {
-  const { activities, active, activeId, setActiveId, addActivity, updateActivity, deleteActivity } = useActivities();
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, loading: authLoading, signInWithEmail, signUpWithEmail, signInWithGoogle, signOut } = useAuth();
+  const { activities, active, activeId, setActiveId, generateActivity, updateActivity, deleteActivity, loading: activitiesLoading } = useActivities(user?.id);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleGenerate = (data: {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground text-sm">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage onSignIn={signInWithEmail} onSignUp={signUpWithEmail} onGoogleSignIn={signInWithGoogle} />;
+  }
+
+  const handleGenerate = async (data: {
     school: string;
     subject: string;
     teacher: string;
@@ -18,16 +34,9 @@ const Index = () => {
     source: string;
     levels: { teoria: number; facil: number; media: number; dificil: number };
   }) => {
-    setIsLoading(true);
-    // Simulate generation delay
-    setTimeout(() => {
-      const activity = generateActivity(
-        data.school, data.subject, data.teacher,
-        data.topic, data.source, data.levels
-      );
-      addActivity(activity);
-      setIsLoading(false);
-    }, 800);
+    setIsGenerating(true);
+    await generateActivity(data);
+    setIsGenerating(false);
   };
 
   const handleNew = () => setActiveId(null);
@@ -44,9 +53,17 @@ const Index = () => {
         />
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-12 flex items-center border-b border-border px-4 bg-card shrink-0">
-            <SidebarTrigger className="mr-3" />
-            <span className="text-sm font-medium text-muted-foreground">LucsQuestions</span>
+          <header className="h-12 flex items-center justify-between border-b border-border px-4 bg-card shrink-0">
+            <div className="flex items-center">
+              <SidebarTrigger className="mr-3" />
+              <span className="text-sm font-medium text-muted-foreground">LucsQuestions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
+                <LogOut className="h-3.5 w-3.5" /> Sair
+              </Button>
+            </div>
           </header>
 
           <main className="flex-1 overflow-y-auto p-6 sm:p-8">
@@ -57,7 +74,7 @@ const Index = () => {
                 onBack={handleNew}
               />
             ) : (
-              <GeneratorForm onGenerate={handleGenerate} isLoading={isLoading} />
+              <GeneratorForm onGenerate={handleGenerate} isLoading={isGenerating} />
             )}
           </main>
         </div>
