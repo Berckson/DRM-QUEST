@@ -128,14 +128,15 @@
     background: #fff !important;
   }
 
-  /* Hide all app chrome */
-  .no-print,
-  [data-sidebar],
-  header.no-print {
+  /* Hide everything, then reveal only the printable TD area */
+  body * {
+    visibility: hidden;
+  }
+
+  .no-print {
     display: none !important;
   }
 
-  /* Only the printable TD area is visible, flush to the page */
   .print-area,
   .print-area * {
     visibility: visible;
