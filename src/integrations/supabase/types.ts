@@ -59,6 +59,90 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_tds: {
+        Row: {
+          answer_key_mode: string
+          author_role: string
+          class_name: string
+          created_at: string
+          id: string
+          mode: string
+          question_count: number
+          questions: Json
+          school: string
+          source: string
+          subject: string
+          teacher: string
+          theory: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answer_key_mode?: string
+          author_role?: string
+          class_name?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          question_count?: number
+          questions?: Json
+          school?: string
+          source?: string
+          subject?: string
+          teacher?: string
+          theory?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answer_key_mode?: string
+          author_role?: string
+          class_name?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          question_count?: number
+          questions?: Json
+          school?: string
+          source?: string
+          subject?: string
+          teacher?: string
+          theory?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
