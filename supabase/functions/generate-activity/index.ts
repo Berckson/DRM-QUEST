@@ -13,7 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    // Auth check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -37,62 +36,91 @@ serve(async (req) => {
       });
     }
 
-    const { topic, source, levels, school, subject, teacher } = await req.json();
+    const body = await req.json();
+    const {
+      topic,
+      source,
+      mode = "web",
+      modelText = "",
+      questionCount = 5,
+      school = "",
+      subject = "",
+      teacher = "",
+      className = "",
+      answerKeyMode = "simple",
+      authorRole = "Aluno",
+    } = body;
 
     if (!topic) {
-      return new Response(JSON.stringify({ error: "Topic is required" }), {
+      return new Response(JSON.stringify({ error: "Tema é obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Enforce server-side question limits by role
+    const maxQuestions = authorRole === "Professor" ? 30 : 10;
+    const count = Math.max(1, Math.min(maxQuestions, Number(questionCount) || 5));
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const totalQuestions = (levels?.teoria || 0) + (levels?.facil || 0) + (levels?.media || 0) + (levels?.dificil || 0);
+    const systemPrompt = `Você é um assistente pedagógico especialista em provas e vestibulares brasileiros (ENEM, FUVEST, ITA, UNICAMP, UNESP, etc.).
 
-    const systemPrompt = `Você é um assistente pedagógico especializado em criar listas de exercícios para professores brasileiros. 
-Suas respostas devem ser em português brasileiro, limpas (sem código, sem markdown de programação), apenas texto formatado para leitura.
-Quando mencionar fórmulas, escreva-as por extenso de forma legível.`;
+REGRAS INVIOLÁVEIS:
+1. TODAS as questões devem ser questões REAIS de exames e vestibulares brasileiros. Nunca invente questões fictícias.
+2. Cada enunciado DEVE começar com a banca e o ano entre colchetes, ex: "[ENEM 2023] ...".
+3. Cada questão DEVE ter EXATAMENTE 5 alternativas de múltipla escolha (A, B, C, D, E).
+4. Indique a letra correta e uma justificativa clara passo a passo.
+5. Responda em português brasileiro, texto limpo, SEM markdown e SEM código.
+6. Retorne SOMENTE um JSON válido e parseável, sem texto antes ou depois.`;
 
-    const userPrompt = `Crie uma atividade educacional completa sobre o tema: "${topic}"${source ? ` baseando-se preferencialmente no conteúdo do site/fonte: "${source}"` : ""}.
+    let contextBlock = "";
+    if (mode === "pdf" && modelText) {
+      contextBlock = `MODO ESPELHAR MODELO (Few-Shot):
+Abaixo está o texto extraído de um TD modelo enviado pelo professor. Use-o APENAS como molde estrutural (formato, estilo, presença ou não de resumo teórico e quantidade de questões).
 
-A atividade deve conter EXATAMENTE estas seções, no formato JSON abaixo:
+--- INÍCIO DO MODELO ---
+${modelText}
+--- FIM DO MODELO ---
 
-1. "theory": Um resumo teórico completo e didático sobre o tema (3-5 parágrafos), usando linguagem clara e acessível para alunos do ensino médio. Inclua conceitos fundamentais, fórmulas importantes (escritas por extenso) e exemplos práticos. NÃO use markdown, apenas texto puro com quebras de linha.
+Instruções para este modo:
+- Conte quantas questões existem no modelo e gere EXATAMENTE a mesma quantidade para o NOVO TEMA "${topic}". Se não for possível contar com clareza, gere ${count} questões.
+- Se o modelo contiver um resumo teórico inicial, gere um novo resumo teórico PROPORCIONAL focado em "${topic}". Se o modelo NÃO tiver teoria, deixe "theory" como string vazia.
+- Mantenha o mesmo nível de dificuldade aparente do modelo.`;
+    } else {
+      contextBlock = `MODO IA + WEB:
+Gere uma atividade sobre o tema "${topic}", priorizando questões reais provenientes da fonte selecionada: "${source}".
+- Gere EXATAMENTE ${count} questões.
+- Inclua um breve resumo teórico didático (2-4 parágrafos) sobre o tema em "theory".`;
+    }
 
-2. "questions": Um array com exatamente ${totalQuestions} questões, distribuídas assim:
-   - ${levels?.teoria || 0} questões de nível "teoria" (conceituais, definições)
-   - ${levels?.facil || 0} questões de nível "facil" (aplicação direta)
-   - ${levels?.media || 0} questões de nível "media" (aplicação intermediária)
-   - ${levels?.dificil || 0} questões de nível "dificil" (problemas complexos)
+    const userPrompt = `${contextBlock}
 
-   Cada questão deve ter:
-   - "text": o enunciado completo da questão
-   - "origin": a origem real da questão (ex: "ENEM 2022", "ITA 2021", "FUVEST 2023", "UNICAMP 2020", "UNESP 2019"). Para questões de teoria, use "Autoral". SEMPRE cite vestibulares reais brasileiros para questões de nível médio e difícil.
-   - "level": o nível ("teoria", "facil", "media", "dificil")
-   - "answer": resposta completa e comentada, explicando o raciocínio passo a passo
-
-IMPORTANTE: 
-- Priorize questões que realmente apareceram em vestibulares brasileiros
-- A teoria deve ser baseada no conteúdo da fonte "${source || "livros didáticos"}"
-- Retorne APENAS o JSON válido, sem texto antes ou depois
-- O texto deve ser limpo, sem marcações de código
+Cada questão do array "questions" deve ter:
+- "text": enunciado completo, iniciando OBRIGATORIAMENTE com a banca e ano entre colchetes (ex: "[FUVEST 2021] ...").
+- "origin": a banca/ano (ex: "ENEM 2023").
+- "alternatives": array com EXATAMENTE 5 strings (apenas o conteúdo das alternativas A, B, C, D, E, sem a letra).
+- "correct": a letra correta entre "A", "B", "C", "D", "E".
+- "explanation": justificativa comentada e passo a passo da resposta correta.
+- "level": "facil", "media" ou "dificil".
 
 Formato de resposta (JSON puro):
 {
-  "theory": "texto do resumo teórico aqui...",
+  "theory": "resumo teórico ou string vazia",
   "questions": [
     {
-      "text": "enunciado",
-      "origin": "ENEM 2022",
-      "level": "facil",
-      "answer": "resposta comentada"
+      "text": "[ENEM 2023] enunciado...",
+      "origin": "ENEM 2023",
+      "alternatives": ["alt A", "alt B", "alt C", "alt D", "alt E"],
+      "correct": "C",
+      "explanation": "justificativa...",
+      "level": "media"
     }
   ]
 }`;
@@ -120,7 +148,7 @@ Formato de resposta (JSON puro):
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao seu workspace." }), {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos ao workspace." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -136,7 +164,6 @@ Formato de resposta (JSON puro):
     const aiData = await response.json();
     const rawContent = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from response (strip markdown code blocks if present)
     let parsed;
     try {
       const cleaned = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
@@ -149,28 +176,44 @@ Formato de resposta (JSON puro):
       });
     }
 
-    // Build activity and save to DB
-    const userId = claimsData.claims.sub;
-    const questions = (parsed.questions || []).map((q: any, i: number) => ({
-      id: `q-${Date.now()}-${i}`,
-      text: q.text || "",
-      origin: q.origin || "Autoral",
-      level: q.level || "facil",
-      answer: q.answer || "",
-    }));
+    const LETTERS = ["A", "B", "C", "D", "E"];
+    const questions = (parsed.questions || []).map((q: any, i: number) => {
+      let alts = Array.isArray(q.alternatives) ? q.alternatives.map((a: any) => String(a)) : [];
+      // Always force exactly 5 alternatives
+      alts = alts.slice(0, 5);
+      while (alts.length < 5) alts.push("");
+      let correct = String(q.correct || "A").trim().toUpperCase().charAt(0);
+      if (!LETTERS.includes(correct)) correct = "A";
+      const level = ["facil", "media", "dificil"].includes(q.level) ? q.level : "media";
+      return {
+        id: `q-${Date.now()}-${i}`,
+        text: q.text || "",
+        origin: q.origin || "Vestibular",
+        alternatives: alts,
+        correct,
+        explanation: q.explanation || q.answer || "",
+        level,
+      };
+    });
 
-    const { data: activity, error: dbError } = await supabase
-      .from("activities")
+    const userId = claimsData.claims.sub;
+
+    const { data: td, error: dbError } = await supabase
+      .from("generated_tds")
       .insert({
         user_id: userId,
-        school: school || "",
+        school: school || "EEEP Deputado Roberto Mesquita",
         subject: subject || "",
         teacher: teacher || "",
+        class_name: className || "",
         topic,
         source: source || "",
+        mode,
         theory: parsed.theory || "",
         questions,
-        levels: levels || { teoria: 0, facil: 0, media: 0, dificil: 0 },
+        question_count: questions.length,
+        answer_key_mode: answerKeyMode,
+        author_role: authorRole,
       })
       .select()
       .single();
@@ -183,7 +226,7 @@ Formato de resposta (JSON puro):
       });
     }
 
-    return new Response(JSON.stringify(activity), {
+    return new Response(JSON.stringify(td), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BookOpen, Trash2, Plus } from 'lucide-react';
-import { Activity } from '@/hooks/useActivities';
+import type { TD } from '@/types/td';
 import {
   Sidebar,
   SidebarContent,
@@ -18,16 +18,16 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface HistorySidebarProps {
-  activities: Activity[];
+  tds: TD[];
   activeId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
 }
 
-export function HistorySidebar({ activities, activeId, onSelect, onDelete, onNew }: HistorySidebarProps) {
+export function HistorySidebar({ tds, activeId, onSelect, onDelete, onNew }: HistorySidebarProps) {
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border no-print">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
           <BookOpen className="h-6 w-6 text-primary shrink-0" />
@@ -50,30 +50,28 @@ export function HistorySidebar({ activities, activeId, onSelect, onDelete, onNew
           <SidebarGroupContent>
             <ScrollArea className="h-[calc(100vh-200px)]">
               <SidebarMenu>
-                {activities.length === 0 && (
+                {tds.length === 0 && (
                   <p className="px-4 py-6 text-sm text-muted-foreground text-center">
                     Nenhuma atividade criada ainda.
                   </p>
                 )}
-                {activities.map((activity) => (
-                  <SidebarMenuItem key={activity.id}>
+                {tds.map((td) => (
+                  <SidebarMenuItem key={td.id}>
                     <SidebarMenuButton
-                      onClick={() => onSelect(activity.id)}
-                      isActive={activeId === activity.id}
+                      onClick={() => onSelect(td.id)}
+                      isActive={activeId === td.id}
                       className="group justify-between pr-2"
                     >
                       <div className="flex flex-col items-start min-w-0">
-                        <span className="text-sm font-medium truncate w-full">
-                          {activity.topic}
-                        </span>
+                        <span className="text-sm font-medium truncate w-full">{td.topic}</span>
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(activity.createdAt), "dd/MM/yy", { locale: ptBR })}
+                          {format(new Date(td.createdAt), 'dd/MM/yy', { locale: ptBR })} · {td.questionCount} questões
                         </span>
                       </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDelete(activity.id);
+                          onDelete(td.id);
                         }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10"
                       >
@@ -89,9 +87,7 @@ export function HistorySidebar({ activities, activeId, onSelect, onDelete, onNew
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border">
-        <p className="text-[10px] text-muted-foreground text-center">
-          v1.0 — Para professores
-        </p>
+        <p className="text-[10px] text-muted-foreground text-center">v1.0 — LucsQuestions</p>
       </SidebarFooter>
     </Sidebar>
   );

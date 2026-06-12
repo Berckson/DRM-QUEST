@@ -110,3 +110,59 @@
     box-shadow: 0 4px 16px -2px hsl(220 25% 10% / 0.08), 0 2px 4px -2px hsl(220 25% 10% / 0.04);
   }
 }
+
+/* TD canvas approximates an A4 sheet on screen */
+.td-canvas {
+  width: 210mm;
+  max-width: 100%;
+}
+
+/* Print rules: A4, clean sheet, only the TD shows */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  /* Hide everything, then reveal only the printable TD area */
+  body * {
+    visibility: hidden;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .td-canvas {
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .td-canvas .p-\[12mm\] {
+    padding: 0 !important;
+  }
+
+  /* Keep each question intact across page breaks */
+  .td-question {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

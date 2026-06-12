@@ -2,16 +2,20 @@ import { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { HistorySidebar } from '@/components/HistorySidebar';
 import { GeneratorForm } from '@/components/GeneratorForm';
-import { ActivityPreview } from '@/components/ActivityPreview';
+import { TDPreview } from '@/components/TDPreview';
 import { AuthPage } from '@/components/AuthPage';
-import { useActivities } from '@/hooks/useActivities';
+import { ProfileSetupModal } from '@/components/ProfileSetupModal';
+import { useTDs, type GenerateParams } from '@/hooks/useTDs';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { LogOut } from 'lucide-react';
 
 const Index = () => {
   const { user, loading: authLoading, signInWithEmail, signUpWithEmail, signInWithGoogle, signOut } = useAuth();
-  const { activities, active, activeId, setActiveId, generateActivity, updateActivity, deleteActivity, loading: activitiesLoading } = useActivities(user?.id);
+  const { profile, loading: profileLoading, selectRole } = useProfile(user?.id);
+  const { tds, active, activeId, setActiveId, generateTD, deleteTD, updateTD } = useTDs(user?.id);
   const [isGenerating, setIsGenerating] = useState(false);
 
   if (authLoading) {
@@ -26,60 +30,60 @@ const Index = () => {
     return <AuthPage onSignIn={signInWithEmail} onSignUp={signUpWithEmail} onGoogleSignIn={signInWithGoogle} />;
   }
 
-  const handleGenerate = async (data: {
-    school: string;
-    subject: string;
-    teacher: string;
-    topic: string;
-    source: string;
-    levels: { teoria: number; facil: number; media: number; dificil: number };
-  }) => {
+  const needsRole = !profileLoading && (!profile || !profile.role);
+  const role = profile?.role ?? 'Aluno';
+
+  const handleGenerate = async (params: GenerateParams) => {
     setIsGenerating(true);
-    await generateActivity(data);
+    await generateTD(params);
     setIsGenerating(false);
   };
 
   const handleNew = () => setActiveId(null);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <HistorySidebar
-          activities={activities}
-          activeId={activeId}
-          onSelect={setActiveId}
-          onDelete={deleteActivity}
-          onNew={handleNew}
-        />
+    <>
+      <ProfileSetupModal open={needsRole} onSelect={selectRole} />
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <HistorySidebar
+            tds={tds}
+            activeId={activeId}
+            onSelect={setActiveId}
+            onDelete={deleteTD}
+            onNew={handleNew}
+          />
 
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-12 flex items-center justify-between border-b border-border px-4 bg-card shrink-0">
-            <div className="flex items-center">
-              <SidebarTrigger className="mr-3" />
-              <span className="text-sm font-medium text-muted-foreground">LucsQuestions</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
-                <LogOut className="h-3.5 w-3.5" /> Sair
-              </Button>
-            </div>
-          </header>
+          <div className="flex-1 flex flex-col min-w-0">
+            <header className="no-print h-12 flex items-center justify-between border-b border-border px-4 bg-card shrink-0">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="mr-1" />
+                <span className="text-sm font-medium text-muted-foreground">LucsQuestions</span>
+                {profile?.role && (
+                  <Badge variant={role === 'Professor' ? 'default' : 'secondary'} className="text-[10px]">
+                    {role}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
+                <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
+                  <LogOut className="h-3.5 w-3.5" /> Sair
+                </Button>
+              </div>
+            </header>
 
-          <main className="flex-1 overflow-y-auto p-6 sm:p-8">
-            {active ? (
-              <ActivityPreview
-                activity={active}
-                onUpdate={updateActivity}
-                onBack={handleNew}
-              />
-            ) : (
-              <GeneratorForm onGenerate={handleGenerate} isLoading={isGenerating} />
-            )}
-          </main>
+            <main className="flex-1 overflow-y-auto p-6 sm:p-8">
+              {active ? (
+                <TDPreview td={active} onUpdate={updateTD} onBack={handleNew} />
+              ) : (
+                <GeneratorForm onGenerate={handleGenerate} isLoading={isGenerating} role={role} />
+              )}
+            </main>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </>
   );
 };
 
