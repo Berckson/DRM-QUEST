@@ -1,9 +1,11 @@
 export type UserRole = 'Professor' | 'Aluno';
+export type UserType = 'ALUNO' | 'PROFESSOR' | 'ADMIN';
 
 export type AnswerKeyMode = 'simple' | 'sheet' | 'commented' | 'screen';
 export type GenerationMode = 'web' | 'pdf';
 
 export type QuestionLevel = 'facil' | 'media' | 'dificil';
+export type DifficultyFocus = 'misturado' | 'facil' | 'media' | 'dificil';
 
 export interface TDQuestion {
   id: string;
@@ -43,19 +45,27 @@ export const SOURCE_OPTIONS = [
   'Todas as Fontes',
 ] as const;
 
+export const DIFFICULTY_FOCUS_OPTIONS: { value: DifficultyFocus; label: string }[] = [
+  { value: 'misturado', label: 'Misturado' },
+  { value: 'facil', label: 'Foco em Fáceis' },
+  { value: 'media', label: 'Foco em Médias' },
+  { value: 'dificil', label: 'Foco em Difíceis' },
+];
+
 export const LEVEL_LABELS: Record<QuestionLevel, string> = {
   facil: 'Fácil',
-  media: 'Média',
+  media: 'Médio',
   dificil: 'Difícil',
 };
 
 export const LEVEL_COLORS: Record<QuestionLevel, string> = {
-  facil: 'bg-success/10 text-success',
-  media: 'bg-warning/10 text-warning',
-  dificil: 'bg-destructive/10 text-destructive',
+  facil: 'bg-success/15 text-success border-success/30',
+  media: 'bg-warning/15 text-warning border-warning/30',
+  dificil: 'bg-destructive/15 text-destructive border-destructive/30',
 };
 
 export const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
 export const STUDENT_MAX_QUESTIONS = 10;
+export const STUDENT_PRO_MAX_QUESTIONS = 30;
 export const TEACHER_MAX_QUESTIONS = 30;
