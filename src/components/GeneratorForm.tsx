@@ -12,6 +12,7 @@ import {
   Loader2,
   FileCheck2,
   X,
+  Gauge,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -29,20 +30,25 @@ import {
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { extractPdfText } from '@/lib/pdfExtract';
+import { sanitizeText, sanitizeRich } from '@/lib/sanitize';
 import {
   SOURCE_OPTIONS,
+  DIFFICULTY_FOCUS_OPTIONS,
   STUDENT_MAX_QUESTIONS,
+  STUDENT_PRO_MAX_QUESTIONS,
   TEACHER_MAX_QUESTIONS,
-  type UserRole,
   type AnswerKeyMode,
   type GenerationMode,
+  type DifficultyFocus,
 } from '@/types/td';
 import type { GenerateParams } from '@/hooks/useTDs';
 
 interface GeneratorFormProps {
   onGenerate: (params: GenerateParams) => void;
   isLoading: boolean;
-  role: UserRole;
+  isTeacher: boolean;
+  isPro: boolean;
+  onUpgrade: () => void;
 }
 
 const ANSWER_KEY_OPTIONS: { value: AnswerKeyMode; label: string; desc: string }[] = [
@@ -51,18 +57,24 @@ const ANSWER_KEY_OPTIONS: { value: AnswerKeyMode; label: string; desc: string }[
   { value: 'screen', label: 'Apenas Ler na Tela', desc: 'Justificativas em painel; ocultas na impressão.' },
 ];
 
-export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProps) {
-  const isPro = role === 'Professor';
-  const maxQuestions = isPro ? TEACHER_MAX_QUESTIONS : STUDENT_MAX_QUESTIONS;
+export function GeneratorForm({ onGenerate, isLoading, isTeacher, isPro, onUpgrade }: GeneratorFormProps) {
+  const canUsePdf = isTeacher || isPro;
+  const maxQuestions = isTeacher
+    ? TEACHER_MAX_QUESTIONS
+    : isPro
+    ? STUDENT_PRO_MAX_QUESTIONS
+    : STUDENT_MAX_QUESTIONS;
 
   const [tab, setTab] = useState<GenerationMode>('web');
   const [school, setSchool] = useState('EEEP Deputado Roberto Mesquita');
   const [subject, setSubject] = useState('');
   const [teacher, setTeacher] = useState('');
+  const [className, setClassName] = useState('');
   const [topic, setTopic] = useState('');
   const [source, setSource] = useState<string>(SOURCE_OPTIONS[0]);
-  const [questionCount, setQuestionCount] = useState(isPro ? 10 : 5);
-  const [answerKeyMode, setAnswerKeyMode] = useState<AnswerKeyMode>(isPro ? 'commented' : 'simple');
+  const [difficultyFocus, setDifficultyFocus] = useState<DifficultyFocus>('misturado');
+  const [questionCount, setQuestionCount] = useState(isTeacher ? 10 : 5);
+  const [answerKeyMode, setAnswerKeyMode] = useState<AnswerKeyMode>(isTeacher ? 'commented' : 'simple');
 
   // PDF tab state
   const [pdfTopic, setPdfTopic] = useState('');
@@ -83,8 +95,8 @@ export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProp
         toast.error('Não foi possível ler o texto do PDF');
         return;
       }
-      setPdfText(text);
-      setPdfName(file.name);
+      setPdfText(sanitizeRich(text, 8000));
+      setPdfName(sanitizeText(file.name, 80));
       toast.success('Modelo carregado com sucesso!');
     } catch (e) {
       console.error(e);
@@ -105,8 +117,8 @@ export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const activeTopic = tab === 'web' ? topic : pdfTopic;
-    if (!activeTopic.trim()) {
+    const activeTopic = sanitizeText(tab === 'web' ? topic : pdfTopic, 160);
+    if (!activeTopic) {
       toast.error('Informe o tema da atividade');
       return;
     }
@@ -115,17 +127,18 @@ export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProp
       return;
     }
     onGenerate({
-      topic: activeTopic.trim(),
+      topic: activeTopic,
       source: tab === 'web' ? source : 'Espelho de Modelo (PDF)',
       mode: tab,
       modelText: tab === 'pdf' ? pdfText : undefined,
-      questionCount,
-      subject,
-      teacher,
-      school,
-      className: '',
-      answerKeyMode: isPro ? answerKeyMode : 'simple',
-      authorRole: role,
+      questionCount: clamp(questionCount),
+      difficultyFocus,
+      subject: sanitizeText(subject, 80),
+      teacher: sanitizeText(teacher, 120),
+      school: sanitizeText(school, 160),
+      className: sanitizeText(className, 60),
+      answerKeyMode: isTeacher ? answerKeyMode : 'simple',
+      authorRole: isTeacher ? 'Professor' : 'Aluno',
     });
   };
 
@@ -138,90 +151,90 @@ export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProp
     >
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <h1 className="text-3xl font-serif font-bold text-foreground">Criar Nova Atividade</h1>
-          <Badge variant={isPro ? 'default' : 'secondary'}>{isPro ? 'PRO' : 'Beta'}</Badge>
+          <h1 className="text-3xl font-serif font-bold text-foreground">
+            {isTeacher ? 'Criar Novo TD' : 'Criar Novo Simulado'}
+          </h1>
+          <Badge variant={isTeacher || isPro ? 'default' : 'secondary'}>
+            {isTeacher ? 'Docente' : isPro ? 'PRO' : 'Grátis'}
+          </Badge>
         </div>
-        <p className="text-muted-foreground">Gere sua lista de exercícios em menos de 1 minuto</p>
+        <p className="text-muted-foreground">Questões reais de vestibulares em menos de 1 minuto</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Header */}
-        <Card className="p-5 academic-shadow">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            Cabeçalho
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5">
-                <School className="h-3.5 w-3.5" /> Escola
-              </Label>
-              <Input value={school} onChange={(e) => setSchool(e.target.value)} className="h-9 text-sm" />
+        {/* Cabeçalho apenas para professores */}
+        {isTeacher && (
+          <Card className="glass-card p-5">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Cabeçalho</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><School className="h-3.5 w-3.5" /> Escola</Label>
+                <Input value={school} onChange={(e) => setSchool(e.target.value)} maxLength={160} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><BookText className="h-3.5 w-3.5" /> Disciplina</Label>
+                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex: Física" maxLength={80} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><User className="h-3.5 w-3.5" /> Professor</Label>
+                <Input value={teacher} onChange={(e) => setTeacher(e.target.value)} placeholder="Nome" maxLength={120} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><Hash className="h-3.5 w-3.5" /> Turma</Label>
+                <Input value={className} onChange={(e) => setClassName(e.target.value)} placeholder="Ex: 3º ano A" maxLength={60} className="h-9 text-sm" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5">
-                <BookText className="h-3.5 w-3.5" /> Disciplina
-              </Label>
-              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex: Física" className="h-9 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5" /> Professor
-              </Label>
-              <Input value={teacher} onChange={(e) => setTeacher(e.target.value)} placeholder="Nome" className="h-9 text-sm" />
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
-        {/* Search Tabs */}
-        <Card className="p-5 academic-shadow">
+        {/* Abas de busca */}
+        <Card className="glass-card p-5">
           <Tabs value={tab} onValueChange={(v) => setTab(v as GenerationMode)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="web" className="gap-1.5">
-                <Sparkles className="h-4 w-4" /> Usar IA + Web
+                <Sparkles className="h-4 w-4" /> Usar IA + Fontes da Web
               </TabsTrigger>
-              <TabsTrigger value="pdf" className="gap-1.5" disabled={!isPro}>
-                {isPro ? <FileUp className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
+              <TabsTrigger value="pdf" className="gap-1.5" disabled={!canUsePdf}>
+                {canUsePdf ? <FileUp className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
                 Espelhar Modelo
-                {!isPro && <Badge variant="secondary" className="ml-1 text-[9px] px-1">PRO</Badge>}
+                {!canUsePdf && <Badge variant="secondary" className="ml-1 text-[9px] px-1">PRO</Badge>}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="web" className="mt-4 space-y-4">
+            <TabsContent value="web" className="mt-4 space-y-4 animate-in fade-in-50 duration-300">
               <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1.5">
-                  <Search className="h-3.5 w-3.5" /> Tema da Atividade *
-                </Label>
-                <Input
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="Ex: Leis de Newton"
-                  className="h-9 text-sm"
-                />
+                <Label className="text-xs flex items-center gap-1.5"><Search className="h-3.5 w-3.5" /> Tema da Atividade *</Label>
+                <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Ex: Leis de Newton" maxLength={160} className="h-9 text-sm" />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1.5">
-                  <Globe className="h-3.5 w-3.5" /> Fonte de Pesquisa
-                </Label>
-                <Select value={source} onValueChange={setSource}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SOURCE_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> Fonte de Pesquisa</Label>
+                  <Select value={source} onValueChange={setSource}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SOURCE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5"><Gauge className="h-3.5 w-3.5" /> Nível de Dificuldade</Label>
+                  <Select value={difficultyFocus} onValueChange={(v) => setDifficultyFocus(v as DifficultyFocus)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DIFFICULTY_FOCUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="pdf" className="mt-4 space-y-4">
+            <TabsContent value="pdf" className="mt-4 space-y-4 animate-in fade-in-50 duration-300">
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={onDrop}
-                className={`relative rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                  dragging ? 'border-primary bg-accent' : 'border-border'
+                className={`relative rounded-lg border-2 border-dashed p-6 text-center transition-all duration-300 ${
+                  dragging ? 'border-primary bg-accent scale-[1.01]' : 'border-border'
                 }`}
               >
                 <input
@@ -256,54 +269,41 @@ export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProp
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1.5">
-                  <Search className="h-3.5 w-3.5" /> Novo Tema para a Atividade *
-                </Label>
-                <Input
-                  value={pdfTopic}
-                  onChange={(e) => setPdfTopic(e.target.value)}
-                  placeholder="Ex: Termodinâmica"
-                  className="h-9 text-sm"
-                />
+                <Label className="text-xs flex items-center gap-1.5"><Search className="h-3.5 w-3.5" /> Novo Tema para a Atividade *</Label>
+                <Input value={pdfTopic} onChange={(e) => setPdfTopic(e.target.value)} placeholder="Ex: Termodinâmica" maxLength={160} className="h-9 text-sm" />
               </div>
             </TabsContent>
           </Tabs>
+
+          {!canUsePdf && (
+            <button type="button" onClick={onUpgrade} className="mt-3 w-full text-xs text-primary hover:underline">
+              Desbloquear "Espelhar Modelo" e gabaritos comentados com o PRO →
+            </button>
+          )}
         </Card>
 
-        {/* Question count */}
-        <Card className="p-5 academic-shadow">
+        {/* Quantidade */}
+        <Card className="glass-card p-5">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold flex items-center gap-1.5">
-              <Hash className="h-4 w-4" /> Quantidade de questões
-            </Label>
+            <Label className="text-sm font-semibold flex items-center gap-1.5"><Hash className="h-4 w-4" /> Quantidade de questões</Label>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setQuestionCount((n) => clamp(n - 1))}
-                className="w-8 h-8 rounded-full border border-border bg-card flex items-center justify-center text-lg hover:bg-muted transition-colors"
-              >
-                −
-              </button>
+              <button type="button" onClick={() => setQuestionCount((n) => clamp(n - 1))} className="w-8 h-8 rounded-full border border-border bg-card flex items-center justify-center text-lg hover:bg-muted transition-colors">−</button>
               <span className="text-xl font-semibold w-8 text-center">{questionCount}</span>
-              <button
-                type="button"
-                onClick={() => setQuestionCount((n) => clamp(n + 1))}
-                className="w-8 h-8 rounded-full border border-border bg-card flex items-center justify-center text-lg hover:bg-muted transition-colors"
-              >
-                +
-              </button>
+              <button type="button" onClick={() => setQuestionCount((n) => clamp(n + 1))} className="w-8 h-8 rounded-full border border-border bg-card flex items-center justify-center text-lg hover:bg-muted transition-colors">+</button>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {isPro
-              ? `Versão PRO: até ${maxQuestions} questões.`
-              : `Versão Beta: até ${maxQuestions} questões por vez.`}
+            {isTeacher
+              ? `Modo Professor: até ${maxQuestions} questões por TD.`
+              : isPro
+              ? `Aluno PRO: geração liberada até ${maxQuestions} questões por simulado.`
+              : `Plano grátis: até ${maxQuestions} questões por vez.`}
           </p>
         </Card>
 
-        {/* Answer key (Professor only) */}
-        {isPro && (
-          <Card className="p-5 academic-shadow">
+        {/* Gabarito (professor) */}
+        {isTeacher && (
+          <Card className="glass-card p-5">
             <Label className="text-sm font-semibold mb-3 block">Formato do Gabarito</Label>
             <div className="space-y-2">
               {ANSWER_KEY_OPTIONS.map((opt) => (
@@ -311,7 +311,7 @@ export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProp
                   type="button"
                   key={opt.value}
                   onClick={() => setAnswerKeyMode(opt.value)}
-                  className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                  className={`w-full text-left rounded-lg border p-3 transition-all duration-200 ${
                     answerKeyMode === opt.value ? 'border-primary bg-accent' : 'border-border hover:bg-muted/50'
                   }`}
                 >
@@ -323,7 +323,7 @@ export function GeneratorForm({ onGenerate, isLoading, role }: GeneratorFormProp
           </Card>
         )}
 
-        <Button type="submit" size="lg" className="w-full gap-2 h-12 text-base font-semibold" disabled={isLoading}>
+        <Button type="submit" size="lg" className="w-full gap-2 h-12 text-base font-semibold transition-transform hover:scale-[1.01]" disabled={isLoading}>
           {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
           {isLoading ? 'Gerando atividade...' : 'Gerar Atividade'}
         </Button>
