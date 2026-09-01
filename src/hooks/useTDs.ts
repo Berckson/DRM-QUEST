@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { TD, TDQuestion, AnswerKeyMode, GenerationMode, UserRole } from '@/types/td';
+import type {
+  TD,
+  TDQuestion,
+  AnswerKeyMode,
+  GenerationMode,
+  UserRole,
+  DifficultyFocus,
+} from '@/types/td';
 
 function mapRow(row: any): TD {
   return {
@@ -28,6 +35,7 @@ export interface GenerateParams {
   mode: GenerationMode;
   modelText?: string;
   questionCount: number;
+  difficultyFocus?: DifficultyFocus;
   subject: string;
   teacher: string;
   school: string;
@@ -60,7 +68,7 @@ export function useTDs(userId: string | undefined) {
     fetchTDs();
   }, [fetchTDs]);
 
-  // Realtime sync of the user's TD history
+  // Realtime sync of the user's TD history (RLS keeps it scoped to the owner)
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
@@ -122,6 +130,7 @@ export function useTDs(userId: string | undefined) {
         class_name: updated.className,
         theory: updated.theory,
         questions: updated.questions as any,
+        question_count: updated.questions.length,
         answer_key_mode: updated.answerKeyMode,
       })
       .eq('id', updated.id);
