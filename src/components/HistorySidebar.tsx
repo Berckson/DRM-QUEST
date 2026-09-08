@@ -31,7 +31,7 @@ export function HistorySidebar({ tds, activeId, onSelect, onDelete, onNew }: His
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
           <BookOpen className="h-6 w-6 text-primary shrink-0" />
-          <span className="font-serif text-lg font-bold text-foreground truncate">LucsQuestions</span>
+          <span className="font-serif text-lg font-bold text-foreground truncate">DRM Quest</span>
         </div>
       </SidebarHeader>
 
@@ -87,7 +87,7 @@ export function HistorySidebar({ tds, activeId, onSelect, onDelete, onNew }: His
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border">
-        <p className="text-[10px] text-muted-foreground text-center">v1.0 — LucsQuestions</p>
+        <p className="text-[10px] text-muted-foreground text-center">v2.0 — DRM Quest</p>
       </SidebarFooter>
     </Sidebar>
   );
