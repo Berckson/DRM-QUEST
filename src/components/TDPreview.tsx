@@ -6,13 +6,17 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { TDCanvas } from './TDCanvas';
+import { StudentQuiz } from './StudentQuiz';
 import { LETTERS } from '@/types/td';
 import type { TD } from '@/types/td';
 
 interface TDPreviewProps {
   td: TD;
+  isTeacher: boolean;
+  isPro: boolean;
   onUpdate: (td: TD) => void;
   onBack: () => void;
+  onUpgrade: () => void;
 }
 
 function buildPlainText(td: TD): string {
@@ -40,7 +44,7 @@ function buildPlainText(td: TD): string {
   return text;
 }
 
-export function TDPreview({ td, onUpdate, onBack }: TDPreviewProps) {
+export function TDPreview({ td, isTeacher, isPro, onUpdate, onBack, onUpgrade }: TDPreviewProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -52,18 +56,17 @@ export function TDPreview({ td, onUpdate, onBack }: TDPreviewProps) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Toolbar (hidden on print) */}
+      {/* Barra de ações (oculta na impressão) */}
       <div className="no-print flex items-center justify-between mb-6 flex-wrap gap-3">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
         <div className="flex items-center gap-2">
-          <Badge variant={td.authorRole === 'Professor' ? 'default' : 'secondary'}>
-            {td.authorRole === 'Professor' ? 'PRO' : 'Beta'}
+          <Badge variant={isTeacher ? 'default' : isPro ? 'default' : 'secondary'}>
+            {isTeacher ? 'Docente' : isPro ? 'PRO' : 'Grátis'}
           </Badge>
 
-          {/* On-screen answer panel (Professor "Apenas Ler na Tela") */}
-          {td.answerKeyMode === 'screen' && (
+          {isTeacher && td.answerKeyMode === 'screen' && (
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5">
@@ -100,10 +103,13 @@ export function TDPreview({ td, onUpdate, onBack }: TDPreviewProps) {
         </div>
       </div>
 
-      {/* Printable area */}
-      <div className="print-area">
-        <TDCanvas td={td} onChange={onUpdate} />
-      </div>
+      {isTeacher ? (
+        <div className="print-area">
+          <TDCanvas td={td} onChange={onUpdate} />
+        </div>
+      ) : (
+        <StudentQuiz td={td} isPro={isPro} onChange={onUpdate} onUpgrade={onUpgrade} />
+      )}
     </div>
   );
 }

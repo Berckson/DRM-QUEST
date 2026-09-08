@@ -166,3 +166,30 @@
     page-break-inside: avoid;
   }
 }
+
+@layer utilities {
+  /* Glassmorphism acadêmico */
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-xl border border-border/60 shadow-[0_4px_24px_-8px_hsl(220_25%_10%/0.10)] transition-all duration-300;
+  }
+  .glass-panel {
+    @apply bg-card/85 backdrop-blur-2xl border border-border/60;
+  }
+  .auth-gradient {
+    background:
+      radial-gradient(60rem 40rem at 15% -10%, hsl(var(--primary) / 0.14), transparent 60%),
+      radial-gradient(50rem 35rem at 110% 110%, hsl(var(--primary) / 0.10), transparent 60%),
+      hsl(var(--background));
+  }
+}
+
+@media print {
+  /* Coluna dupla do professor com divisor sutil */
+  .td-columns {
+    column-rule: 1px solid hsl(0 0% 80%);
+  }
+}
+
+.td-columns {
+  column-rule: 1px solid hsl(0 0% 88%);
+}
