@@ -62,17 +62,24 @@ export function useProfile(userId: string | undefined) {
     [userId, fetchProfile]
   );
 
-  /** MVP: ativa o plano PRO após o pagamento Pix simulado. */
-  const activatePro = useCallback(async () => {
-    if (!userId) return false;
-    const { error } = await supabase.from('profiles').update({ is_pro: true }).eq('id', userId);
-    if (error) {
-      toast.error('Não foi possível ativar o PRO');
-      return false;
-    }
-    setProfile((p) => (p ? { ...p, is_pro: true } : p));
-    return true;
-  }, [userId]);
+  // O plano PRO só é liberado pelo administrador (auditoria do pagamento Pix).
+  // Alterações diretas de `is_pro` pelo cliente são bloqueadas por trigger no banco.
+
+  // Mantém o perfil sincronizado quando o administrador aprova o pagamento.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel('profile_self')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
+        () => fetchProfile()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchProfile]);
 
   const userType: UserType = (profile?.user_type as UserType) ?? 'ALUNO';
   const isTeacher = userType === 'PROFESSOR' || userType === 'ADMIN' || isAdmin;

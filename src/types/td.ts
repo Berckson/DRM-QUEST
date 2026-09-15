@@ -66,6 +66,51 @@ export const LEVEL_COLORS: Record<QuestionLevel, string> = {
 
 export const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
+export interface EnemArea {
+  id: string;
+  emoji: string;
+  title: string;
+  subjects: string;
+  /** Tema enviado à IA ao iniciar o simulado desta área. */
+  topic: string;
+  accent: string;
+}
+
+export const ENEM_AREAS: EnemArea[] = [
+  {
+    id: 'natureza',
+    emoji: '🧪',
+    title: 'Ciências da Natureza e suas Tecnologias',
+    subjects: 'Física, Química e Biologia',
+    topic: 'Ciências da Natureza e suas Tecnologias (Física, Química e Biologia)',
+    accent: 'from-emerald-500/15 to-emerald-500/0',
+  },
+  {
+    id: 'humanas',
+    emoji: '🏛️',
+    title: 'Ciências Humanas e suas Tecnologias',
+    subjects: 'História, Geografia, Filosofia e Sociologia',
+    topic: 'Ciências Humanas e suas Tecnologias (História, Geografia, Filosofia e Sociologia)',
+    accent: 'from-amber-500/15 to-amber-500/0',
+  },
+  {
+    id: 'linguagens',
+    emoji: '📚',
+    title: 'Linguagens, Códigos e suas Tecnologias',
+    subjects: 'Português, Literatura, Inglês/Espanhol e Artes',
+    topic: 'Linguagens, Códigos e suas Tecnologias (Português, Literatura, Inglês/Espanhol e Artes)',
+    accent: 'from-sky-500/15 to-sky-500/0',
+  },
+  {
+    id: 'matematica',
+    emoji: '📐',
+    title: 'Matemática e suas Tecnologias',
+    subjects: 'Matemática, Geometria e Estatística',
+    topic: 'Matemática e suas Tecnologias (Matemática, Geometria e Estatística)',
+    accent: 'from-violet-500/15 to-violet-500/0',
+  },
+];
+
 export const STUDENT_MAX_QUESTIONS = 10;
 export const STUDENT_PRO_MAX_QUESTIONS = 30;
 export const TEACHER_MAX_QUESTIONS = 30;
