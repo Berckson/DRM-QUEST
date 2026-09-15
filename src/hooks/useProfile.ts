@@ -96,7 +96,7 @@ export function useProfile(userId: string | undefined) {
     needsSetup,
     teacherPending,
     chooseRole,
-    activatePro,
+    
     refetch: fetchProfile,
   };
 }
