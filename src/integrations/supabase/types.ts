@@ -161,6 +161,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pro_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          pix_key: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          pix_key?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          pix_key?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -268,6 +304,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      review_pro_request: {
+        Args: { _approve: boolean; _request_id: string }
+        Returns: undefined
       }
       review_teacher_request: {
         Args: { _approve: boolean; _request_id: string }
