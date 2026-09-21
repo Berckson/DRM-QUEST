@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, X, ShieldAlert, KeyRound, Loader2, Mail, Phone, School } from 'lucide-react';
+import { ArrowLeft, Check, X, ShieldAlert, KeyRound, Loader2, Mail, Phone, School, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useAllTeacherRequests } from '@/hooks/useTeacherRequest';
+import { useAllProRequests } from '@/hooks/useProRequest';
 import { usePixKey } from '@/hooks/useSettings';
 import { sanitizeText } from '@/lib/sanitize';
 
@@ -24,6 +25,7 @@ export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: profileLoading } = useProfile(user?.id);
   const { requests, loading } = useAllTeacherRequests(isAdmin);
+  const { requests: proRequests, loading: proLoading } = useAllProRequests(isAdmin);
   const { pixKey, saveKey } = usePixKey();
   const [keyDraft, setKeyDraft] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -53,8 +55,18 @@ export default function Admin() {
     toast.success(approve ? 'Professor aprovado!' : 'Solicitação recusada');
   };
 
+  const reviewPro = async (id: string, approve: boolean) => {
+    setBusy(id);
+    const { error } = await supabase.rpc('review_pro_request', { _request_id: id, _approve: approve });
+    setBusy(null);
+    if (error) return toast.error('Erro ao processar pagamento');
+    toast.success(approve ? 'Acesso PRO liberado!' : 'Pagamento recusado');
+  };
+
   const pending = requests.filter((r) => r.status === 'PENDENTE');
   const history = requests.filter((r) => r.status !== 'PENDENTE');
+  const proPending = proRequests.filter((r) => r.status === 'PENDENTE');
+  const proHistory = proRequests.filter((r) => r.status !== 'PENDENTE');
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
