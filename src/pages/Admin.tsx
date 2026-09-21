@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, X, ShieldAlert, KeyRound, Loader2, Mail, Phone, School } from 'lucide-react';
+import { ArrowLeft, Check, X, ShieldAlert, KeyRound, Loader2, Mail, Phone, School, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useAllTeacherRequests } from '@/hooks/useTeacherRequest';
+import { useAllProRequests } from '@/hooks/useProRequest';
 import { usePixKey } from '@/hooks/useSettings';
 import { sanitizeText } from '@/lib/sanitize';
 

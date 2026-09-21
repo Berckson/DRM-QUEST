@@ -70,7 +70,7 @@ const Index = () => {
       source: 'Vestibulares Reais/ENEM',
       mode: 'web',
       questionCount: count,
-      difficultyFocus: 'mixed',
+      difficultyFocus: 'misturado',
       subject: area.title,
       teacher: '',
       school: '',
