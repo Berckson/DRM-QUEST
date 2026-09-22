@@ -149,7 +149,9 @@ Gere uma atividade sobre o tema "${topic}", priorizando questões reais provenie
 - Inclua um breve resumo teórico didático (2-4 parágrafos) sobre o tema em "theory".`;
     }
 
-    const userPrompt = `${contextBlock}
+    const userPrompt = `${bancaRule}
+
+${contextBlock}
 
 Cada questão do array "questions" deve ter:
 - "text": enunciado completo, iniciando OBRIGATORIAMENTE com a banca e ano entre colchetes (ex: "[FUVEST 2021] ...").
