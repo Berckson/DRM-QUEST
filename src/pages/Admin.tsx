@@ -105,8 +105,56 @@ export default function Admin() {
         </Card>
 
         <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" /> Pagamentos PRO aguardando conferência ({proPending.length})
+          </h2>
+          {proLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+          {!proLoading && proPending.length === 0 && (
+            <Card className="glass-card p-6 text-center text-sm text-muted-foreground">
+              Nenhum pagamento Pix aguardando conferência.
+            </Card>
+          )}
+          {proPending.map((r) => (
+            <Card key={r.id} className="glass-card p-4 transition-shadow hover:shadow-md">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="font-semibold text-sm">{r.full_name}</div>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Mail className="h-3.5 w-3.5" />{r.email}</div>
+                  <div className="text-xs text-muted-foreground font-mono">Pix: {r.pix_key}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Valor informado: R$ {Number(r.amount).toFixed(2).replace('.', ',')} ·{' '}
+                    {new Date(r.created_at).toLocaleString('pt-BR')}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" className="gap-1.5" disabled={busy === r.id} onClick={() => reviewPro(r.id, true)}>
+                    {busy === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Liberar PRO
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5" disabled={busy === r.id} onClick={() => reviewPro(r.id, false)}>
+                    <X className="h-3.5 w-3.5" /> Recusar
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+          {proHistory.length > 0 && (
+            <div className="space-y-2 pt-1">
+              {proHistory.map((r) => (
+                <Card key={r.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <span className="font-medium">{r.full_name}</span>
+                    <span className="text-xs text-muted-foreground"> · {r.email}</span>
+                  </div>
+                  <Badge variant={STATUS_VARIANT[r.status]}>{r.status}</Badge>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Solicitações pendentes ({pending.length})
+            Solicitações de professor pendentes ({pending.length})
           </h2>
           {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
           {!loading && pending.length === 0 && (
