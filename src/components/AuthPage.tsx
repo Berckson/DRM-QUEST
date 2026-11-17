@@ -54,7 +54,6 @@ export function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPageProps) 
             <GraduationCap className="h-6 w-6" />
           </span>
           <h1 className="text-3xl font-serif font-bold text-foreground">DRM Quest</h1>
-          <p className="text-muted-foreground text-sm mt-1">Ecossistema educacional da EEEP Deputado Roberto Mesquita</p>
         </div>
 
         <Card className="glass-card p-6">
